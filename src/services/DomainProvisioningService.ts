@@ -19,10 +19,11 @@ export class DomainProvisionService {
     console.log("ZONE CREATED", zone);
 
 
-    await this.namecheapDNS.setCustomNameservers(
-      domain,
-      zone.nameservers
-    );
+    await this.namecheapDNS.setCustomNameservers(domain, zone.nameservers)
+      .catch(err => {
+        console.error("NS SWITCH FAILED:", err.message);
+        throw err;
+    });
     console.log("NAMECHEAP NS SET", domain);
 
     const root = await this.dnsService.createARecord(

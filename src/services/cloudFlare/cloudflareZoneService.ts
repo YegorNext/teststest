@@ -11,7 +11,7 @@ export class CloudflareZoneService {
 
     async addDomain(domain: string): Promise<CloudflareZoneResult> {
     console.log("CF: creating zone for", domain);
-
+    console.log(cloudflareConfig.accountId);
 
     const response = await this.client.post<any>("/zones", {
         name: domain,

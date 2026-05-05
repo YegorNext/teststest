@@ -1,3 +1,4 @@
+import { parseStringPromise } from 'xml2js';
 import { NamecheapHttpClient } from './purchase/dns/NamecheapHttpClient';
 import { NamecheapRequestBuilder } from './purchase/dns/NamecheapRequestBuilder';
 import { NamecheapResponseParser } from './purchase/dns/NamecheapResponseParser';
@@ -33,31 +34,37 @@ export class NamecheapDNSService {
     }
   }
 
-  public async setCustomNameservers(domain: string, nameservers: string[]): Promise<SetARecordResult> {
-    try {
-      const params = NamecheapRequestBuilder.buildSetCustomNameservers(
-        domain,
-        nameservers
-      );
+  public async setCustomNameservers(domain: string, nameservers: string[]) {
+    const params = NamecheapRequestBuilder.buildSetCustomNameservers(
+      domain,
+      nameservers
+    );
 
-      const responseXml = await this.http.get(params);
-      console.log("NAMECHEAP XML:", responseXml);
-      
-      const isSuccess = await this.parser.parseSetCustomNameservers(
-        responseXml
-      );
+    const responseXml = await this.http.get(params);
 
-      return {
-        isSuccess,
-        errors: [],
-        rawXml: responseXml,
-      };
-    } catch (err: any) {
-      return {
-        isSuccess: false,
-        errors: [err.message],
-        rawXml: "",
-      };
+    const parsed = await parseStringPromise(responseXml, {
+      explicitArray: false,
+    });
+
+    const status = parsed?.ApiResponse?.$?.Status;
+
+    const updated =
+      parsed?.ApiResponse?.CommandResponse?.DomainDNSSetCustomResult?.$
+        ?.Updated;
+
+    const errors = parsed?.ApiResponse?.Errors;
+
+    if (status !== "OK" || updated !== "true") {
+      throw new Error(
+        `Namecheap NS update failed for ${domain}. Status=${status}, Updated=${updated}, Errors=${JSON.stringify(
+          errors
+        )}`
+      );
     }
+
+    return {
+      isSuccess: true,
+      rawXml: responseXml,
+    };
   }
 }
