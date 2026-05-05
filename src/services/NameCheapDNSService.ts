@@ -34,37 +34,56 @@ export class NamecheapDNSService {
     }
   }
 
-  public async setCustomNameservers(domain: string, nameservers: string[]) {
-    const params = NamecheapRequestBuilder.buildSetCustomNameservers(
-      domain,
-      nameservers
-    );
+public async setCustomNameservers(domain: string, nameservers: string[]) {
+  console.log("NAMECHEAP NS UPDATE START");
+  console.log("DOMAIN:", domain);
+  console.log("NAMESERVERS:", nameservers);
 
-    const responseXml = await this.http.get(params);
+  const params = NamecheapRequestBuilder.buildSetCustomNameservers(
+    domain,
+    nameservers
+  );
 
-    const parsed = await parseStringPromise(responseXml, {
-      explicitArray: false,
-    });
+  console.log("REQUEST PARAMS:", params);
 
-    const status = parsed?.ApiResponse?.$?.Status;
+  const responseXml = await this.http.get(params);
 
-    const updated =
-      parsed?.ApiResponse?.CommandResponse?.DomainDNSSetCustomResult?.$
-        ?.Updated;
+  console.log("RAW NAMECHEAP RESPONSE:");
+  console.log(responseXml);
 
-    const errors = parsed?.ApiResponse?.Errors;
+  const parsed = await parseStringPromise(responseXml, {
+    explicitArray: false,
+  });
 
-    if (status !== "OK" || updated !== "true") {
-      throw new Error(
-        `Namecheap NS update failed for ${domain}. Status=${status}, Updated=${updated}, Errors=${JSON.stringify(
-          errors
-        )}`
-      );
-    }
+  console.log("PARSED RESPONSE:");
+  console.dir(parsed, { depth: null });
 
-    return {
-      isSuccess: true,
-      rawXml: responseXml,
-    };
+  const status = parsed?.ApiResponse?.$?.Status;
+  const updated =
+    parsed?.ApiResponse?.CommandResponse?.DomainDNSSetCustomResult?.$
+      ?.Updated;
+
+  const errors = parsed?.ApiResponse?.Errors;
+
+  console.log("STATUS:", status);
+  console.log("UPDATED:", updated);
+  console.log("ERRORS:", JSON.stringify(errors, null, 2));
+
+  if (status !== "OK" || updated !== "true") {
+    const errorMessage = `Namecheap NS update failed for ${domain}. Status=${status}, Updated=${updated}, Errors=${JSON.stringify(
+      errors
+    )}`;
+
+    console.error("NS UPDATE FAILED:", errorMessage);
+
+    throw new Error(errorMessage);
   }
+
+  console.log("NAMECHEAP NS UPDATE SUCCESS");
+
+  return {
+    isSuccess: true,
+    rawXml: responseXml,
+  };
+}
 }
