@@ -1,7 +1,7 @@
 import { CloudflareZoneService } from "./cloudFlare/cloudflareZoneService";
 import { CloudflareDNSService } from "./cloudFlare/cloudflareDNSService";
 import { CloudflareSSLService } from "./cloudFlare/cloudflareSSLService";
-import { NamecheapDNSService } from "./NamecheapDNSService";
+import { NamecheapDNSService } from "./NameCheapDNSService";
 
 export class DomainProvisionService {
   constructor(

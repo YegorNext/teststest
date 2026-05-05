@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { NameCheapDomainRegistrar } from '../services/purchase/NameCheapDomainRegistrar';
 
-import { NamecheapDNSService } from '../services/NamecheapDNSService';
+import { NamecheapDNSService } from '../services/NameCheapDNSService';
 import { NamecheapHttpClient } from '../services/purchase/dns/NamecheapHttpClient';
 import { NamecheapResponseParser } from '../services/purchase/dns/NamecheapResponseParser';
 import { namecheapConfig } from '../config/namecheap.config';
