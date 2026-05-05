@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import domainRouter from './routes/domain.routes';
+import cloudflareRouter from './routes/cloudflare.router';
 
 
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
@@ -31,6 +32,9 @@ app.use(
   }),
 );
 
+app.use('/api/domain', domainRouter);
+app.use('/api/cloudflare', cloudflareRouter);
+
 //handlers
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(err.status || 500).json({
@@ -39,7 +43,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-app.use('/api/domain', domainRouter);
 
 
 const server: Server = createServer(app);

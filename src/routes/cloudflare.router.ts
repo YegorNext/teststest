@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { CloudflareController } from "../controllers/cloudflare.controller";
+import { cloudflareProvisionService } from "../di/cloudflare.cotainer"; // 👈 добавить
 import { errorHandler } from "../utils/handlers/error.handler";
 
 const router = Router();
