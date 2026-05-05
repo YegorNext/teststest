@@ -6,6 +6,8 @@ export class CloudflareApiClient {
   private client: AxiosInstance;
 
   constructor() {
+    console.log("base url: "  + cloudflareConfig.baseUrl);
+
     this.client = axios.create({
       baseURL: cloudflareConfig.baseUrl,
       headers: {

@@ -12,9 +12,13 @@ export class NamecheapResponseParser {
   async parseSetCustomNameservers(xml: string): Promise<boolean> {
     const parsed = await parseStringPromise(xml);
 
-    return (
-      parsed.ApiResponse?.CommandResponse?.[0]
-        ?.DomainDNSSetCustomResult?.[0]?.$.Updated === "true"
-    );
+    const result = parsed?.ApiResponse?.CommandResponse?.[0]?.DomainDNSSetCustomResult?.[0]?.$;
+
+    if (!result) {
+      console.log("INVALID NAMECHEAP RESPONSE", xml);
+      return false;
+    }
+
+    return result.Updated === "true";
   }
 }

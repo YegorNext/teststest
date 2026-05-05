@@ -9,26 +9,24 @@ export interface CloudflareZoneResult {
 export class CloudflareZoneService {
   constructor(private client: CloudflareApiClient) {}
 
-  async addDomain(domain: string): Promise<CloudflareZoneResult> {
+    async addDomain(domain: string): Promise<CloudflareZoneResult> {
+    console.log("CF: creating zone for", domain);
+
+
     const response = await this.client.post<any>("/zones", {
-      name: domain,
-      type: "full",
-      account: {
+        name: domain,
+        type: "full",
+        account: {
         id: cloudflareConfig.accountId,
-      },
+        },
     });
 
-    if (!response.success) {
-      throw new Error(
-        response.errors?.[0]?.message || "Cloudflare zone creation failed"
-      );
-    }
+    console.log("CF: response ", response);
 
-    const result = response.result;
 
     return {
-      zoneId: result.id,
-      nameservers: result.name_servers,
+        zoneId: response.result.id,
+        nameservers: response.result.name_servers,
     };
-  }
+    }
 }

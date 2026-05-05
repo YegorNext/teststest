@@ -32,4 +32,32 @@ export class NamecheapDNSService {
       };
     }
   }
+
+  public async setCustomNameservers(domain: string, nameservers: string[]): Promise<SetARecordResult> {
+    try {
+      const params = NamecheapRequestBuilder.buildSetCustomNameservers(
+        domain,
+        nameservers
+      );
+
+      const responseXml = await this.http.get(params);
+      console.log("NAMECHEAP XML:", responseXml);
+      
+      const isSuccess = await this.parser.parseSetCustomNameservers(
+        responseXml
+      );
+
+      return {
+        isSuccess,
+        errors: [],
+        rawXml: responseXml,
+      };
+    } catch (err: any) {
+      return {
+        isSuccess: false,
+        errors: [err.message],
+        rawXml: "",
+      };
+    }
+  }
 }

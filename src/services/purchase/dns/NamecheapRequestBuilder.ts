@@ -24,7 +24,13 @@ export class NamecheapRequestBuilder {
     const { sld, tld } = DomainUtils.split(domain);
 
     return {
+      ApiUser: namecheapConfig.apiUser,
+      ApiKey: namecheapConfig.apiKey,
+      UserName: namecheapConfig.userName,
+      ClientIp: namecheapConfig.clientIp,
+
       Command: "namecheap.domains.dns.setCustom",
+
       SLD: sld,
       TLD: tld,
       NameServers: nameservers.join(","),

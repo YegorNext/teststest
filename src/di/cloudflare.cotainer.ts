@@ -3,7 +3,7 @@ import { CloudflareZoneService } from "../services/cloudFlare/cloudflareZoneServ
 import { CloudflareDNSService } from "../services/cloudFlare/cloudflareDNSService";
 import { CloudflareSSLService } from "../services/cloudFlare/cloudflareSSLService";
 import { DomainProvisionService } from "../services/DomainProvisioningService";
-import { NamecheapDNSService } from "../services/NameCheapDNSService";
+import { NamecheapDNSService } from "../services/NamecheapDNSService";
 import { NamecheapHttpClient } from "../services/purchase/dns/NamecheapHttpClient";
 import { NamecheapResponseParser } from "../services/purchase/dns/NamecheapResponseParser";
 import { namecheapConfig } from "../config/namecheap.config";
