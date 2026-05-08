@@ -1,5 +1,5 @@
 import { CloudflareApiClient } from "./cloudflareApiClient";
-import { cloudflareConfig } from "../../config/cloudflare.config";
+import { CloudflareAccountEntity } from "@org/db-models";
 
 export interface CloudflareZoneResult {
   zoneId: string;
@@ -7,26 +7,23 @@ export interface CloudflareZoneResult {
 }
 
 export class CloudflareZoneService {
-  constructor(private client: CloudflareApiClient) {}
+  constructor(
+    private client: CloudflareApiClient,
+    private account: CloudflareAccountEntity
+  ) {}
 
-    async addDomain(domain: string): Promise<CloudflareZoneResult> {
-    console.log("CF: creating zone for", domain);
-    console.log(cloudflareConfig.accountId);
-
+  async addDomain(domain: string): Promise<CloudflareZoneResult> {
     const response = await this.client.post<any>("/zones", {
-        name: domain,
-        type: "full",
-        account: {
-        id: cloudflareConfig.accountId,
-        },
+      name: domain,
+      type: "full",
+      account: {
+        id: this.account.accountId,
+      },
     });
 
-    console.log("CF: response ", response);
-
-
     return {
-        zoneId: response.result.id,
-        nameservers: response.result.name_servers,
+      zoneId: response.result.id,
+      nameservers: response.result.name_servers,
     };
-    }
+  }
 }

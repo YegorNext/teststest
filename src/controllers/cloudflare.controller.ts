@@ -1,18 +1,26 @@
 import { Request, Response } from "express";
-import { cloudflareProvisionService } from "../di/cloudflare.cotainer";
+import { DomainProvisioningFactory } from "../services/factories/DomainProvisioning.factory";
 
 export class CloudflareController {
-  provisionDomain = async (req: Request, res: Response) => {
-    const { domain, ip } = req.body;
+  constructor(private readonly provisioningFactory: DomainProvisioningFactory) {}
 
-    if (!domain || !ip) {
+  provisionDomain = async (req: Request, res: Response) => {
+    const { domain, ip, cloudflareAccountId, namecheapAccountId } = req.body;
+
+    if (!domain || !ip || !cloudflareAccountId || !namecheapAccountId) {
       return res.status(400).json({
-        message: "Domain and IP are required",
+        message: "domain, ip, cloudflareAccountId, namecheapAccountId are required",
       });
     }
 
     try {
-      const result = await cloudflareProvisionService.provision(domain, ip);
+      const service =
+        await this.provisioningFactory.createCloudflareProvisionService(
+          cloudflareAccountId,
+          namecheapAccountId
+        );
+
+      const result = await service.provision(domain, ip);
 
       return res.json({
         success: true,

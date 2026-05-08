@@ -1,20 +1,20 @@
 import { IDomainRegistrar } from './IDomainRegistrar';
 import { DomainPurchaseUrlBuilder } from './components/DomainPurchaseUrlBuilder';
 import { DomainResponseParser } from './components/DomainResponseParser';
-import { NameCheapApiClient } from './components/NameCheapApiClient';
+import { NamecheapApiClient } from './components/NamecheapApiClient';
+import { NamecheapDomainChecker } from './components/NamecheapDomainChecker';
 
-import { NameCheapDomainChecker } from './components/NameCheapDomainChecker';
-
-
-export class NameCheapDomainRegistrar implements IDomainRegistrar {
-  private checker: NameCheapDomainChecker;
+export class NamecheapDomainRegistrar implements IDomainRegistrar {
+  private checker: NamecheapDomainChecker;
   private parser: DomainResponseParser;
-  private apiClient: NameCheapApiClient;
+  private apiClient: NamecheapApiClient;
 
-  constructor() {
-    this.checker = new NameCheapDomainChecker();
+  constructor(private readonly account: any ) {
+    this.checker = new NamecheapDomainChecker(account);
+
     this.parser = new DomainResponseParser();
-    this.apiClient = new NameCheapApiClient();
+
+    this.apiClient = new NamecheapApiClient(account.apiUrl);
   }
 
   public async checkAvailability(domain: string): Promise<boolean> {
@@ -22,12 +22,10 @@ export class NameCheapDomainRegistrar implements IDomainRegistrar {
   }
 
   public async registerDomain(domain: string): Promise<boolean> {
-
     await this.ensureAvailable(domain);
 
-    const xml = await this.purchase(domain);
-
-    console.log(`Raw XML response from NameCheap API: ${xml}`);
+    const url = this.buildPurchaseUrl(domain);
+    const xml = await this.apiClient.execute(url);
 
     return this.parser.parseRegistered(xml);
   }
@@ -36,18 +34,12 @@ export class NameCheapDomainRegistrar implements IDomainRegistrar {
     const available = await this.checkAvailability(domain);
 
     if (!available) {
-        throw new Error(`Domain ${domain} is not available for registration.`);
+      throw new Error(`Domain ${domain} is not available for registration.`);
     }
   }
 
-   private buildPurchaseUrl(domain: string): string {
-     const builder = new DomainPurchaseUrlBuilder(domain);
-     return builder.build();
-   }
-  
-   private async purchase(domain: string): Promise<string> {
-    const url = this.buildPurchaseUrl(domain);
-    return this.apiClient.execute(url);
+  private buildPurchaseUrl(domain: string): string {
+    const builder = new DomainPurchaseUrlBuilder(this.account, domain);
+    return builder.build();
   }
-
 }

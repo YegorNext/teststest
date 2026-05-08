@@ -1,7 +1,7 @@
 import { NamecheapHttpClient } from './dns/NamecheapHttpClient';
 import { NamecheapPricingRequestBuilder } from './pricing/NamecheapPricingRequestBuilder';
 import { NamecheapPricingResponseParser } from './pricing/NamecheapPricingResponseParser';
-import { NamecheapPricingMapper } from './pricing/NamecheapPricingMapper';
+import { NamecheapPricingMapper } from './mappers/NamecheapPricingMapper';
 
 export class NameCheapDomainPricingService {
   constructor(
@@ -14,52 +14,81 @@ export class NameCheapDomainPricingService {
   ) {}
 
   public async getPricing(domain: string) {
+    let xml = '';
+    let parsed: any = null;
+
     try {
-      const params = NamecheapPricingRequestBuilder.build(
-        this.apiUser,
-        this.apiKey,
-        this.userName,
-        this.clientIp,
-        domain
-      );
+      const params = this.buildParams(domain);
+      this.log('REQUEST PARAMS', params);
 
-      const xml = await this.http.get(params);
+      xml = await this.http.get(params);
+      this.log('RAW XML', xml);
 
-      const parsed = await this.parser.parse(xml);
+      parsed = await this.parser.parse(xml);
+      this.log('PARSED XML', parsed);
 
-      if (!parsed) {
-        return {
-          domain,
-          pricing: null,
-          errors: ['Invalid XML response'],
-          rawXml: xml,
-        };
+      const apiError = this.extractApiError(parsed);
+      if (apiError) {
+        return this.fail(domain, xml, apiError);
       }
 
       const pricing = NamecheapPricingMapper.fromXml(parsed);
 
       if (!pricing) {
-        return {
-          domain,
-          pricing: null,
-          errors: ['Cannot parse pricing structure'],
-          rawXml: xml,
-        };
+        return this.fail(domain, xml, 'Failed to map pricing structure');
       }
 
-      return {
-        domain,
-        pricing,
-        errors: [],
-        rawXml: xml,
-      };
-    } catch (error: any) {
-      return {
-        domain,
-        pricing: null,
-        errors: [error.message],
-        rawXml: '',
-      };
+      return this.success(domain, xml, pricing);
+    } catch (e: any) {
+      return this.fail(domain, xml, e.message || 'UNKNOWN_ERROR');
     }
+  }
+
+  private buildParams(domain: string) {
+    return NamecheapPricingRequestBuilder.build(
+      this.apiUser,
+      this.apiKey,
+      this.userName,
+      this.clientIp,
+      domain
+    );
+  }
+
+  private extractApiError(parsed: any): string | null {
+    const status = parsed?.ApiResponse?.$?.Status;
+
+    if (!parsed) return 'Invalid or empty API response';
+
+    if (status !== 'OK') {
+      const errorNode = parsed?.ApiResponse?.Errors?.Error;
+
+      return typeof errorNode === 'string'
+        ? errorNode
+        : errorNode?._ || 'Unknown Namecheap API error';
+    }
+
+    return null;
+  }
+
+  private success(domain: string, xml: string, pricing: any) {
+    return {
+      domain,
+      pricing,
+      errors: [],
+      rawXml: xml,
+    };
+  }
+
+  private fail(domain: string, xml: string, message: string) {
+    return {
+      domain,
+      pricing: null,
+      errors: [message],
+      rawXml: xml,
+    };
+  }
+
+  private log(label: string, data: any) {
+    console.log(`[NAMECHEAP][PRICING] ${label}:`, data);
   }
 }

@@ -1,15 +1,10 @@
 import { CloudflareZoneService } from "./cloudFlare/cloudflareZoneService";
 import { CloudflareDNSService } from "./cloudFlare/cloudflareDNSService";
 import { CloudflareSSLService } from "./cloudFlare/cloudflareSSLService";
-import { NamecheapDNSService } from "./NameCheapDNSService";
+import { NamecheapDNSService } from "./NamecheapDNSService";
 
 export class DomainProvisionService {
-  constructor(
-    private zoneService: CloudflareZoneService,
-    private dnsService: CloudflareDNSService,
-    private sslService: CloudflareSSLService,
-    private namecheapDNS: NamecheapDNSService   
-  ) {}
+  constructor(private zoneService: CloudflareZoneService, private dnsService: CloudflareDNSService, private sslService: CloudflareSSLService, private namecheapDNS: NamecheapDNSService) {}
 
   async provision(domain: string, ip: string) {
     console.log("START");

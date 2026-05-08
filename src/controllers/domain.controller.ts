@@ -1,61 +1,66 @@
 import { Request, Response } from 'express';
-import { NameCheapDomainRegistrar } from '../services/purchase/NameCheapDomainRegistrar';
 
-import { NamecheapDNSService } from '../services/NameCheapDNSService';
-import { NamecheapHttpClient } from '../services/purchase/dns/NamecheapHttpClient';
-import { NamecheapResponseParser } from '../services/purchase/dns/NamecheapResponseParser';
-import { namecheapConfig } from '../config/namecheap.config';
-
-import { NameCheapDomainPricingService } from '../services/purchase/NameCheapDomainPricingService';
-import { NamecheapPricingResponseParser } from '../services/purchase/pricing/NamecheapPricingResponseParser';
-
+import { NamecheapAccountService } from '../services/NamecheapAccountService';
+import { NamecheapServiceFactory } from '../services/factories/NamecheapServiceFactory';
 
 export class DomainController {
-  private registrar = new NameCheapDomainRegistrar();
+  private factory: NamecheapServiceFactory;
 
-  private dnsService = new NamecheapDNSService(new NamecheapHttpClient(namecheapConfig.apiUrl), new NamecheapResponseParser());
-  private pricingService = new NameCheapDomainPricingService(
-    new NamecheapHttpClient(namecheapConfig.apiUrl),
-    new NamecheapPricingResponseParser(),
-    namecheapConfig.apiUser,
-    namecheapConfig.apiKey,
-    namecheapConfig.userName,
-    namecheapConfig.clientIp
-  );
+  constructor() {
+    const accountService = new NamecheapAccountService();
 
-  
-  addARecordOnNamecheap = async (req: Request, res: Response) => {
-    const { domain, ip, host } = req.body;
-
-    if (!domain || !ip) {
-      return res.status(400).json({
-        message: 'Domain and IP are required.',
-      });
-    }
-
-    const aRecordResult = await this.dnsService.setARecord(
-      domain,
-      ip,
-      host || '@'
+    this.factory = new NamecheapServiceFactory(
+      accountService,
+      process.env.NAMECHEAP_API_URL!,  
+      process.env.NAMECHEAP_CLIENT_IP! 
     );
+  }
 
-    return res.json({
-      domain,
-      namecheapARecord: aRecordResult,
-    });
-  };
 
-  purchaseDomain = async (req: Request, res: Response) => {
-    const { domain } = req.body;
+  addARecordOnNamecheap = async (req: Request, res: Response) => {
+    const { domain, ip, host, accountId } = req.body;
 
-    if (!domain) {
+    if (!domain || !ip || !accountId) {
       return res.status(400).json({
-        message: 'Domain is required.',
+        message: 'Domain, IP and accountId are required.',
       });
     }
 
     try {
-      const success = await this.registrar.registerDomain(domain);
+      const dnsService = await this.factory.createDNSService(accountId);
+
+      const aRecordResult = await dnsService.setARecord(
+        domain,
+        ip,
+        host || '@'
+      );
+
+      return res.json({
+        domain,
+        namecheapARecord: aRecordResult,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        domain,
+        message: error.message,
+      });
+    }
+  };
+
+
+  purchaseDomain = async (req: Request, res: Response) => {
+    const { domain, accountId } = req.body;
+
+    if (!domain || !accountId) {
+      return res.status(400).json({
+        message: 'Domain and accountId are required.',
+      });
+    }
+
+    try {
+      const registrar = await this.factory.createRegistrar(accountId);
+
+      const success = await registrar.registerDomain(domain);
 
       return res.json({
         domain,
@@ -73,28 +78,30 @@ export class DomainController {
     }
   };
 
-getDomainPricing = async (req: Request, res: Response) => {
-  const { domain } = req.body;
+  getDomainPricing = async (req: Request, res: Response) => {
+    const { domain, accountId } = req.body;
 
-  if (!domain) {
-    return res.status(400).json({
-      message: 'Domain is required.',
-    });
-  }
+    if (!domain || !accountId) {
+      return res.status(400).json({
+        message: 'Domain and accountId are required.',
+      });
+    }
 
-  try {
-    const result = await this.pricingService.getPricing(domain);
+    try {
+      const pricingService = await this.factory.createPricingService(accountId);
 
-    return res.json({
-      domain: result.domain,
-      price: result.pricing,
-      errors: result.errors,
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      domain,
-      message: error.message,
-    });
-  }
-};
+      const result = await pricingService.getPricing(domain);
+
+      return res.json({
+        domain: result.domain,
+        price: result.pricing,
+        errors: result.errors,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        domain,
+        message: error.message,
+      });
+    }
+  };
 }
